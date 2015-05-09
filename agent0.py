@@ -1,137 +1,119 @@
+#!/usr/bin/python -tt
+
+from bzrc import BZRC, Command
+import sys, math, time
+
+# An incredibly simple agent.  All we do is find the closest enemy tank, drive
+# towards it, and shoot.  Note that if friendly fire is allowed, you will very
+# often kill your own tanks with this code.
+
+#################################################################
+# NOTE TO STUDENTS
+# This is a starting point for you.  You will need to greatly
+# modify this code if you want to do anything useful.  But this
+# should help you to know how to interact with BZRC in order to
+# get the information you need.
+# 
+# After starting the bzrflag server, this is one way to start
+# this code:
+# python agent0.py [hostname] [port]
+# 
+# Often this translates to something like the following (with the
+# port name being printed out by the bzrflag server):
+# python agent0.py localhost 49857
+#################################################################
+
+class Agent(object):
+
+    def __init__(self, bzrc):
+        self.bzrc = bzrc
+        self.constants = self.bzrc.get_constants()
+        self.commands = []
+
+    def tick(self, time_diff):
+        '''Some time has passed; decide what to do next'''
+        # Get information from the BZRC server
+        mytanks, othertanks, flags, shots = self.bzrc.get_lots_o_stuff()
+        self.mytanks = mytanks
+        self.othertanks = othertanks
+        self.flags = flags
+        self.shots = shots
+        self.enemies = [tank for tank in othertanks if tank.color !=
+                self.constants['team']]
+
+        # Reset my set of commands (we don't want to run old commands)
+        self.commands = []
+
+        # Decide what to do with each of my tanks
+        for bot in mytanks:
+            self.attack_enemies(bot)
+
+        # Send the commands to the server
+        results = self.bzrc.do_commands(self.commands)
+
+    def attack_enemies(self, bot):
+        '''Find the closest enemy and chase it, shooting as you go'''
+        best_enemy = None
+        best_dist = 2 * float(self.constants['worldsize'])
+        for enemy in self.enemies:
+            if enemy.status != 'alive':
+                continue
+            dist = math.sqrt((enemy.x - bot.x)**2 + (enemy.y - bot.y)**2)
+            if dist < best_dist:
+                best_dist = dist
+                best_enemy = enemy
+        if best_enemy is None:
+            command = Command(bot.index, 0, 0, False)
+            self.commands.append(command)
+        else:
+            self.move_to_position(bot, best_enemy.x, best_enemy.y)
+
+    def move_to_position(self, bot, target_x, target_y):
+        target_angle = math.atan2(target_y - bot.y,
+                target_x - bot.x)
+        relative_angle = self.normalize_angle(target_angle - bot.angle)
+        command = Command(bot.index, 1, 2 * relative_angle, True)
+        self.commands.append(command)
+
+    def normalize_angle(self, angle):
+        '''Make any angle be between +/- pi.'''
+        angle -= 2 * math.pi * int (angle / (2 * math.pi))
+        if angle <= -math.pi:
+            angle += 2 * math.pi
+        elif angle > math.pi:
+            angle -= 2 * math.pi
+        return angle
 
 
+def main():
+    # Process CLI arguments.
+    try:
+        execname, host, port = sys.argv
+    except ValueError:
+        execname = sys.argv[0]
+        print >>sys.stderr, '%s: incorrect number of arguments' % execname
+        print >>sys.stderr, 'usage: %s hostname port' % sys.argv[0]
+        sys.exit(-1)
+
+    # Connect.
+    #bzrc = BZRC(host, int(port), debug=True)
+    bzrc = BZRC(host, int(port))
+
+    agent = Agent(bzrc)
+
+    prev_time = time.time()
+
+    # Run the agent
+    try:
+        while True:
+            time_diff = time.time() - prev_time
+            agent.tick(time_diff)
+    except KeyboardInterrupt:
+        print "Exiting due to keyboard interrupt."
+        bzrc.close()
 
 
+if __name__ == '__main__':
+    main()
 
-
-
-
-
-
-
-
-
-
-
-
-<!doctype html>
-<!-- paulirish.com/2008/conditional-stylesheets-vs-css-hacks-answer-neither/ -->
-<!--[if lt IE 7 ]> <html class="no-js ie6" lang="en"> <![endif]-->
-<!--[if IE 7 ]>    <html class="no-js ie7" lang="en"> <![endif]-->
-<!--[if IE 8 ]>    <html class="no-js ie8" lang="en"> <![endif]-->
-<!--[if (gte IE 9)|!(IE)]><!--> <html class="no-js" lang="en"> <!--<![endif]-->
-<head>
-    <meta charset="UTF-8">
-    <meta http-equiv="X-UA-Compatible" content="IE=edge,chrome=1">
-
-    <title>Brigham Young University Sign-in Service</title>
-    <meta name="description" content="">
-    <meta name="author" content="">
-
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <script type="text/javascript" src="/cas/js/jquery/1.4.2/jquery.min.js;jsessionid=C20CC2E72737ECDB9B4FEA508EF2F5CB.1"></script>
-    <script type="text/javascript" src="/cas/js/jquery/1.8.5/jquery-ui.min.js;jsessionid=C20CC2E72737ECDB9B4FEA508EF2F5CB.1"></script>
-    <link rel="shortcut icon" href="/cas/images/favicon.ico;jsessionid=C20CC2E72737ECDB9B4FEA508EF2F5CB.1"/>
-    <link rel="stylesheet" media="all and (min-width: 1px) and (max-width: 550px)" href="/cas/css/handheld.css;jsessionid=C20CC2E72737ECDB9B4FEA508EF2F5CB.1" />
-    <link rel="stylesheet" media="all and (min-width: 550px)" href="/cas/css/style.css;jsessionid=C20CC2E72737ECDB9B4FEA508EF2F5CB.1"/>
-    <link rel="stylesheet" media="all" href="/cas/css/application.css;jsessionid=C20CC2E72737ECDB9B4FEA508EF2F5CB.1"/>
-    <script type="text/javascript" src="/cas/js/cas.js;jsessionid=C20CC2E72737ECDB9B4FEA508EF2F5CB.1"></script>
-	<script type="text/javascript" src="/cas/js/modernizr/modernizr.custom.js;jsessionid=C20CC2E72737ECDB9B4FEA508EF2F5CB.1"></script>
-</head>
-
-<body>
-   <!--Content-->
-   <div id="main" class="content" role="main">
-        <h2><div id="BYU"></div><!--img src="/cas/images/BYUBar.png;jsessionid=C20CC2E72737ECDB9B4FEA508EF2F5CB.1" alt="BYU Brigham Young University" /--></h2>
-
-<form id="credentials" action="/cas/login;jsessionid=C20CC2E72737ECDB9B4FEA508EF2F5CB.1?service=https%3A%2F%2Flearningsuite.byu.edu%2Fplugins%2FUpload%2FfileDownload.php%3FfileId%3Ddb678010-9dzh-NAGX-VKpp-nR1f50d48690" method="post" onsubmit="return sanitizeNetID()">
-	
-	<h1>Sign In</h1>
-	<fieldset id="inputarea">
-		<div class="row">
-			<label for="netid" id="labelnetid"><span class="accesskey">N</span>et ID:</label>
-			
-			
-				
-				<input id="netid" name="username" tabindex="1" accesskey="n" type="text" value="" autocomplete="true"/>
-			
-		</div>
-		<div class="row">
-			<label for="password" id="labelpassword"><span class="accesskey">P</span>assword:</label>
-			
-			<input id="password" name="password" tabindex="2" accesskey="p" type="password" value="" autocomplete="true"/>
-		</div>
-		<div id="warngroup" class="row">
-			<input name="warn" value="true" id="warn" tabindex="3"
-				   accesskey="w" type="checkbox"/>
-			<label for="warn" id="warnlabel"><span class="accesskey">W</span>arn me before signing me into other sites.</label>
-		</div>
-		<input type="hidden" name="execution" value="e1s1"/>
-		<input type="hidden" name="lt" value="LT-558177-v2rWcyla2oaOsLR5CGiuW5jQ7OTwx1"/>
-		<input type="hidden" name="_eventId" value="submit"/>
-		<input type="submit" class="submit" tabindex="4" value=""/>
-	</fieldset>
-</form>
-<div id="links">
-	<a href="https://y.byu.edu/ae/prod/authentication/cgi/findNetId.cgi" id="forgot">Forgot your Net ID or password?</a>
-	<br>
-	<a href="https://y.byu.edu/ae/prod/person/cgi/createNetId.cgi" id="create">Create a Net ID</a>
-</div>
-<div id="security" class="content" role="main">
-	<div id="lock"></div>
-	<p><strong>Security:</strong> BYU protects personal information by restricting network access to individuals with an
-		authorized username and password. The username is a unique, personal network identifier called a Net ID
-		and is assigned to each BYU patron.</p>
-
-	<p>For security reasons, please sign out and Exit your web browser when you are finished accessing authenticated services!</p>
-</div>
-
-
-
-<script type="text/javascript">
-  if (!String.prototype.trim) {
-    (function() {
-      // Make sure we trim BOM and NBSP
-      var rtrim = /^[\s\uFEFF\xA0]+|[\s\uFEFF\xA0]+$/g;
-      String.prototype.trim = function() {
-        return this.replace(rtrim, '');
-      };
-    })();
-  }
-
-  var sanitizeNetID = function() {
-    var netIDElement = document.getElementById('netid');
-    netIDElement.value = netIDElement.value.trim().toLowerCase();
-    return true;
-  };
-</script>
-
-
-
-
-
-
-
-</div>
-<div id="powered-by">
-    <p>&sdot; <i>Powered by</i> BYU Office of Information Technology Core Services &sdot;</p>
-</div>
-<script type="text/javascript">
-
-    var _gaq = _gaq || [];
-    _gaq.push(['_setAccount', 'UA-17149951-3']);
-    _gaq.push(['_trackPageview']);
-
-    (function () {
-        var ga = document.createElement('script');
-        ga.type = 'text/javascript';
-        ga.async = true;
-        ga.src = ('https:' == document.location.protocol ? 'https://ssl' : 'http://www') + '.google-analytics.com/ga.js';
-        var s = document.getElementsByTagName('script')[0];
-        s.parentNode.insertBefore(ga, s);
-    })();
-
-</script>
-</body>
-</html>
-
+# vim: et sw=4 sts=4
