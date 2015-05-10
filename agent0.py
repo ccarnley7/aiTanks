@@ -29,6 +29,11 @@ class Agent(object):
         self.bzrc = bzrc
         self.constants = self.bzrc.get_constants()
         self.commands = []
+        bases = self.bzrc.get_bases()
+        self.bases = bases
+        for base in bases:
+        	if base.color == self.constants['team']:
+        		self.mybase = base
 
     def tick(self, time_diff):
         '''Some time has passed; decide what to do next'''
@@ -44,13 +49,30 @@ class Agent(object):
         # Reset my set of commands (we don't want to run old commands)
         self.commands = []
 
+        # print self.constants
+        self.get_flag(mytanks[0], flags[3])
         # Decide what to do with each of my tanks
-        for bot in mytanks:
-            self.attack_enemies(bot)
+        # for bot in mytanks:
+            # self.attack_enemies(bot)
 
         # Send the commands to the server
         results = self.bzrc.do_commands(self.commands)
 
+    def get_flag(self, bot, flag):
+    	'''Go get the flag without running into anything'''
+    	if bot.flag == "-":
+    		print "here"
+    		self.move_to_position(bot, flag.x, flag.y)
+    	else:
+    		self.return_to_base(bot)
+		# if flag.color == self.mytanks[0].color:
+		# 	continue
+		# if flag.poss_color == self.mytanks[0].color:
+		# 	continue
+		
+    def return_to_base(self, bot):
+    	'''Return to base!!'''
+    	self.move_to_position(bot, self.mybase.corner1_x, self.mybase.corner1_y)
     def attack_enemies(self, bot):
         '''Find the closest enemy and chase it, shooting as you go'''
         best_enemy = None
