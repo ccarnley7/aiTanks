@@ -1,8 +1,3 @@
-'''
-Created on Sep 19, 2014
-
-@author: Jon "Neo" Pimentel
-'''
 import sys
 import math
 import time
