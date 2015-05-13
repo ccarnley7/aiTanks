@@ -42,7 +42,10 @@ class Agent(object):
         self.dy = 0
         self.curSpeed = 0
         self.curAngVel = 0
+        self.prevAngVel = 0
+        self.deltaT = 1000
         self.curAngle = 0
+        self.visualizationRun = True
         for base in bases:
         	if base.color == self.constants['team']:
         		self.mybase = base
@@ -62,41 +65,20 @@ class Agent(object):
         # Reset my set of commands (we don't want to run old commands)
         self.commands = []
 
-        # print self.constants
-        # self.get_flag(mytanks[0], flags[3])
         self.currentTank = mytanks[0]
-        self.flag = flags[0]
+        self.flag = flags[2]
         
         self.attractiveField()
-        print "we ran attractiveField"
-        # self.repulsiveFields()
-        # print "we ran repulsiveFields"
-        # self.tangentialFields()
-        # print "we ran tangentialFields"
-        self.applyDelta()
-        print "we ran applyDelta"
-        command = Command(0, self.curSpeed, self.curAngVel, False)
+        self.repulsiveFields()
+        self.tangentialFields()
+        self.controller()
+        command = Command(0, 1, self.curAngVel, True)
         self.commands.append(command)
-        # Decide what to do with each of my tanks
-        # for bot in mytanks:
-            # self.attack_enemies(bot)
-
-        # Send the commands to the server
 
         results = self.bzrc.do_commands(self.commands)
-        self.visualization()
-
-    def get_flag(self, bot, flag):
-    	'''Go get the flag without running into anything'''
-    	if bot.flag == "-":
-    		print "here"
-    		self.move_to_position(bot, flag.x, flag.y)
-    	else:
-    		self.return_to_base(bot)
-		# if flag.color == self.mytanks[0].color:
-		# 	continue
-		# if flag.poss_color == self.mytanks[0].color:
-		# 	continue
+        if self.visualizationRun:
+            self.visualization()
+            self.visualizationRun = False
 
     def getDistance(self, point1, point2):
         return math.sqrt(math.pow(point2[0] - point1[0], 2) + math.pow(point1[1] - point2[1], 2))   
@@ -105,8 +87,6 @@ class Agent(object):
         length_sqd = (math.pow(end[0] - start[0], 2) + math.pow(start[1] - end[1], 2))
         
         t = ((point[0] - start[0]) * (end[0] - start[0]) + (point[1] - start[1]) * (end[1] - start[1])) / length_sqd
-        # if t < 0: return self.getDistance(point, start)
-        # if t > 1: return self.getDistance(point, end)
         if t < 0 or t > 1: return 9001
         
         return self.getDistance(point, [start[0] + t * (end[0] - start[0]), start[1] + t * (end[1] - start[1])])     
@@ -115,13 +95,13 @@ class Agent(object):
         if x != -1 and y != -1:
             self.currentTank.x = x
             self.currentTank.y = y
-            self.goalPos = self.flag
-
-        print "x=", self.currentTank.x, " y=", self.currentTank.y
-        # self.distance = math.sqrt((self.goalPos[0] - self.currentTank.x) ** 2 + (self.currentTank.y - self.goalPos[1]) ** 2)
-        self.distance = math.sqrt((200 - self.currentTank.x) ** 2 + (self.currentTank.y - 200) ** 2)
-        self.angle = math.atan2(200 - self.currentTank.y, 200 - self.currentTank.x)
-        # normalize angle?
+        goalx = self.flag.x
+        goaly = self.flag.y
+        if self.currentTank.flag != "-":
+            goalx = self.mybase.corner1_x
+            goaly = self.mybase.corner1_y
+        self.distance = math.sqrt((goalx - self.currentTank.x) ** 2 + (self.currentTank.y - goaly) ** 2)
+        self.angle = math.atan2(goaly - self.currentTank.y, goalx - self.currentTank.x)
         spread = 10  # not sure what this should be
         alpha = 10  # not sure what this should be
         
@@ -135,19 +115,15 @@ class Agent(object):
             self.dx = alpha * spread * math.cos(self.angle)
             self.dy = alpha * spread * math.sin(self.angle)
         
-        # print 'dx: ', self.dx
-        # print 'dy: ', self.dy    
-
     def attractiveVisualizationField(self, x, y):
         if x != -1 and y != -1:
             self.goalPos = self.flag
 
         # print "x:", self.goalPos.x, "y:", self.goalPos.y, ":", self.goalPos.color
-        self.goalPos.x = 200
-        self.goalPos.y = 200
-        self.distance = math.sqrt((self.goalPos.x - x) ** 2 + (y - self.goalPos.y) ** 2)
-        self.angle = math.atan2(self.goalPos.y - y, self.goalPos.x - x)
-        # normalize angle?
+        goalx = self.flag.x
+        goaly = self.flag.y
+        self.distance = math.sqrt((goalx - x) ** 2 + (y - goaly) ** 2)
+        self.angle = math.atan2(goaly - y, goalx - x)
         spread = 10  # not sure what this should be
         alpha = 10  # not sure what this should be
         
@@ -161,9 +137,6 @@ class Agent(object):
             self.dx = alpha * spread * math.cos(self.angle)
             self.dy = alpha * spread * math.sin(self.angle)
         
-        # print 'dx: ', self.dx
-        # print 'dy: ', self.dy    
-
     def repulsiveFields(self, x=-1, y=-1):
         if x != -1 and y != -1:
             self.currentTank.x = x
@@ -172,7 +145,7 @@ class Agent(object):
         spread = 10;
         beta = 20;
         
-        if self.currentTank.flag != '-':  # they should get out of HIS way
+        if self.currentTank.flag != '-': 
             return
         
         for tank in self.mytanks:
@@ -181,7 +154,6 @@ class Agent(object):
             
             distance = math.sqrt(math.pow(tank.x - self.currentTank.x, 2) + math.pow(self.currentTank.y - tank.y, 2))
             angle = self.normalize_angle(math.atan2(tank.y - self.currentTank.y, tank.x - self.currentTank.x))
-            # normalize angle?
             
             if distance < radius:
                 doX = math.copysign(1, math.cos(angle)) * -9001
@@ -189,7 +161,7 @@ class Agent(object):
             elif radius <= distance and distance <= (spread + radius):
                 doX = -beta * (spread + radius - distance) * math.cos(angle)
                 doY = -beta * (spread + radius - distance) * math.sin(angle)    
-            else:  # distance > spread + radius
+            else: 
                 doX = 0;
                 doY = 0;
                 
@@ -204,9 +176,7 @@ class Agent(object):
         spread = 10;
         beta2 = 100;
         for obstacle in self.obstacles:
-            # i= 0
             for i in range(0, 4):
-                # print 'obstacle[',i,']: ', obstacle[i]
                 start = obstacle[i]
                 if i == 3: end = obstacle[0]
                 else: end = obstacle[i + 1]
@@ -214,33 +184,23 @@ class Agent(object):
                 point = [self.currentTank.x, self.currentTank.y]
             
                 distance = self.distanceToLine(start, end, point)
-                # angle = self.normalize_angle(math.atan2(end[1] - start[1], end[0] - start[0]))  # - math.pi/2 ?
                 angle = (math.atan2(end[0] - start[0], -(end[1] - start[1])) ) - math.pi / 2
-                # normalize?
             
                 if distance < radius:
-                    print "It's over 9000! Tangential angle: ", angle
                     
                     doX = math.cos(angle) * 9001
                     doY = math.sin(angle) * 9001
                 
                 elif radius <= distance and distance <= (spread + radius):
-                    print "It's within the spread! Tangential angle: ", angle
                     doX = beta2 * (spread + radius - distance) * math.cos(angle)
                     doY = beta2 * (spread + radius - distance) * math.sin(angle)    
-                else:  # distance > spread + radius
+                else:  
                     doX = 0;
                     doY = 0;
                 
                 self.dx = self.dx + doX
                 self.dy = self.dy + doY   
-
                  
-		
-    def return_to_base(self, bot):
-    	'''Return to base!!'''
-    	self.move_to_position(bot, self.mybase.corner1_x, self.mybase.corner1_y)
-
     def attack_enemies(self, bot):
         '''Find the closest enemy and chase it, shooting as you go'''
         best_enemy = None
@@ -277,14 +237,21 @@ class Agent(object):
     def visualization(self):
         '''pick every tenth point to build a potential field'''
         
-        MatrixX = [[0 for x in range(20)] for x in range(20)] 
-        MatrixY = [[0 for x in range(20)] for x in range(20)]
+        # generate grid
+        x=np.linspace(-400, 400, 40)
+        y=np.linspace(-400, 400, 40)
+        x, y=np.meshgrid(x, y)
+        # calculate vector field
+
+        MatrixX = np.zeros((x.shape))
+        MatrixY = np.zeros((y.shape))
+
 
         i = 0;
-        for x in xrange(0, 399,20):
+        for a in xrange(-400, 400,20):
             j = 0;
-            for y in xrange(0, 399,20):
-                self.attractiveVisualizationField(x, y)
+            for b in xrange(-400, 400,20):
+                self.attractiveVisualizationField(a, b)
                 MatrixX[i][j] = self.dx
                 MatrixY[i][j] = self.dy
                 j = j+1
@@ -293,42 +260,26 @@ class Agent(object):
         fig = plt.figure()
         ax = fig.add_subplot(111)
  
-        # generate grid
-        x=np.linspace(0, 400, 30)
-        y=np.linspace(0, 400, 30)
-        x, y=np.meshgrid(x, y)
-        # calculate vector field
+        
 
         # plot vecor field
         ax.quiver(x, y, MatrixX, MatrixY, pivot='middle', color='r', headwidth=4, headlength=6)
         ax.set_xlabel('x')
         ax.set_ylabel('y')
-        # plt.show()
         plt.savefig('visualization_quiver_demo.png')
 
-    def applyDelta(self):
-        threshold = .5
-        # set up speed and angvel based on delta
-        self.curSpeed = math.sqrt(math.pow(self.dx, 2) + math.pow(self.dy, 2)) / 100
-        angle = math.atan2(self.dy, self.dx)  # angle we want to face
-        curAngle = self.currentTank.angle  # angle we are currently facing
-        # print 'current speed', self.curSpeed
-        # print 'target angle: ', angle
-        # print 'current angle: ', curAngle
-        print 'dx: ', self.dx
-        print 'dy: ', self.dy
+    def controller(self):
+        angle = math.atan2(self.dy, self.dx)  
+        curAngle = self.currentTank.angle  
         
+        Kp = 3;
+        Kd = 2;
         angleDif = self.normalize_angle(angle - curAngle)
-        # angleDif= math.fabs(curAngle - angle) #does this need to be normalized?
-        # signedAngleDif= angle - curAngle
-        # print 'Angle difference: ', angleDif
-        if angleDif < threshold and angleDif > -threshold:  # this is a shot in the dark. Tuning needed
-            # self.curAngVel= signedAngleDif
-            self.curAngVel = angleDif * 2
-        else:
-            # self.curAngVel= math.copysign(1, signedAngleDif) #should come out to 1 or -1  
-            self.curAngVel = math.copysign(1, angleDif)
-        # print 'angvel: ', self.curAngVel
+
+        pController = (Kp * angleDif)
+        dController = (Kd * (angleDif - self.prevAngVel)/self.deltaT)
+        self.curAngVel =  pController+dController
+        self.prevAngVel = angleDif
 
 def main():
     # Process CLI arguments.
