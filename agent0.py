@@ -2,6 +2,8 @@
 
 from bzrc import BZRC, Command
 import sys, math, time
+import matplotlib.pyplot as plt
+import numpy as np
 
 # An incredibly simple agent.  All we do is find the closest enemy tank, drive
 # towards it, and shoot.  Note that if friendly fire is allowed, you will very
@@ -67,11 +69,11 @@ class Agent(object):
         
         self.attractiveField()
         print "we ran attractiveField"
-        self.repulsiveFields()
-        print "we ran repulsiveFields"
-        self.tangentialFields()
-        print "we ran tangentialFields"
-        # self.applyDelta()
+        # self.repulsiveFields()
+        # print "we ran repulsiveFields"
+        # self.tangentialFields()
+        # print "we ran tangentialFields"
+        self.applyDelta()
         print "we ran applyDelta"
         command = Command(0, self.curSpeed, self.curAngVel, False)
         self.commands.append(command)
@@ -114,8 +116,37 @@ class Agent(object):
             self.currentTank.x = x
             self.currentTank.y = y
             self.goalPos = self.flag
-        self.distance = math.sqrt((self.goalPos[0] - self.currentTank.x) ** 2 + (self.currentTank.y - self.goalPos[1]) ** 2)
-        self.angle = math.atan2(self.goalPos[1] - self.currentTank.y, self.goalPos[0] - self.currentTank.x)
+
+        print "x=", self.currentTank.x, " y=", self.currentTank.y
+        # self.distance = math.sqrt((self.goalPos[0] - self.currentTank.x) ** 2 + (self.currentTank.y - self.goalPos[1]) ** 2)
+        self.distance = math.sqrt((200 - self.currentTank.x) ** 2 + (self.currentTank.y - 200) ** 2)
+        self.angle = math.atan2(200 - self.currentTank.y, 200 - self.currentTank.x)
+        # normalize angle?
+        spread = 10  # not sure what this should be
+        alpha = 10  # not sure what this should be
+        
+        if self.distance < self.goalRadius:
+            self.dx = 0
+            self.dy = 0
+        elif self.goalRadius <= self.distance and self.distance <= spread + self.goalRadius:
+            self.dx = alpha * (self.distance - self.goalRadius) * math.cos(self.angle)
+            self.dy = alpha * (self.distance - self.goalRadius) * math.sin(self.angle)
+        else:  # distance > spread+radius
+            self.dx = alpha * spread * math.cos(self.angle)
+            self.dy = alpha * spread * math.sin(self.angle)
+        
+        # print 'dx: ', self.dx
+        # print 'dy: ', self.dy    
+
+    def attractiveVisualizationField(self, x, y):
+        if x != -1 and y != -1:
+            self.goalPos = self.flag
+
+        # print "x:", self.goalPos.x, "y:", self.goalPos.y, ":", self.goalPos.color
+        self.goalPos.x = 200
+        self.goalPos.y = 200
+        self.distance = math.sqrt((self.goalPos.x - x) ** 2 + (y - self.goalPos.y) ** 2)
+        self.angle = math.atan2(self.goalPos.y - y, self.goalPos.x - x)
         # normalize angle?
         spread = 10  # not sure what this should be
         alpha = 10  # not sure what this should be
@@ -246,23 +277,25 @@ class Agent(object):
     def visualization(self):
         '''pick every tenth point to build a potential field'''
         
-        MatrixX = [[0 for x in range(50)] for x in range(50)] 
-        MatrixY = [[0 for x in range(50)] for x in range(50)]
+        MatrixX = [[0 for x in range(20)] for x in range(20)] 
+        MatrixY = [[0 for x in range(20)] for x in range(20)]
 
-        for x in xrange(0, 400):
-            for y in xrange(0, 400):
-                self.attractiveField(x, y)
-                MatrixX[x][y] = self.dx
-                MatrixY[x][y] = self.dy
-                x = x + 8;
-                y = y + 8; 
+        i = 0;
+        for x in xrange(0, 399,20):
+            j = 0;
+            for y in xrange(0, 399,20):
+                self.attractiveVisualizationField(x, y)
+                MatrixX[i][j] = self.dx
+                MatrixY[i][j] = self.dy
+                j = j+1
+            i = i + 1
 
         fig = plt.figure()
         ax = fig.add_subplot(111)
  
         # generate grid
-        x=np.linspace(0, 400, 50)
-        y=np.linspace(0, 400, 50)
+        x=np.linspace(0, 400, 30)
+        y=np.linspace(0, 400, 30)
         x, y=np.meshgrid(x, y)
         # calculate vector field
 
@@ -270,9 +303,32 @@ class Agent(object):
         ax.quiver(x, y, MatrixX, MatrixY, pivot='middle', color='r', headwidth=4, headlength=6)
         ax.set_xlabel('x')
         ax.set_ylabel('y')
-        plt.show()
+        # plt.show()
         plt.savefig('visualization_quiver_demo.png')
 
+    def applyDelta(self):
+        threshold = .5
+        # set up speed and angvel based on delta
+        self.curSpeed = math.sqrt(math.pow(self.dx, 2) + math.pow(self.dy, 2)) / 100
+        angle = math.atan2(self.dy, self.dx)  # angle we want to face
+        curAngle = self.currentTank.angle  # angle we are currently facing
+        # print 'current speed', self.curSpeed
+        # print 'target angle: ', angle
+        # print 'current angle: ', curAngle
+        print 'dx: ', self.dx
+        print 'dy: ', self.dy
+        
+        angleDif = self.normalize_angle(angle - curAngle)
+        # angleDif= math.fabs(curAngle - angle) #does this need to be normalized?
+        # signedAngleDif= angle - curAngle
+        # print 'Angle difference: ', angleDif
+        if angleDif < threshold and angleDif > -threshold:  # this is a shot in the dark. Tuning needed
+            # self.curAngVel= signedAngleDif
+            self.curAngVel = angleDif * 2
+        else:
+            # self.curAngVel= math.copysign(1, signedAngleDif) #should come out to 1 or -1  
+            self.curAngVel = math.copysign(1, angleDif)
+        # print 'angvel: ', self.curAngVel
 
 def main():
     # Process CLI arguments.
