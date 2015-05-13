@@ -64,13 +64,14 @@ class Agent(object):
         # self.get_flag(mytanks[0], flags[3])
         self.currentTank = mytanks[0]
         self.flag = flags[0]
+        
         self.attractiveField()
         print "we ran attractiveField"
         self.repulsiveFields()
         print "we ran repulsiveFields"
         self.tangentialFields()
         print "we ran tangentialFields"
-        self.applyDelta()
+        # self.applyDelta()
         print "we ran applyDelta"
         command = Command(0, self.curSpeed, self.curAngVel, False)
         self.commands.append(command)
@@ -81,6 +82,7 @@ class Agent(object):
         # Send the commands to the server
 
         results = self.bzrc.do_commands(self.commands)
+        self.visualization()
 
     def get_flag(self, bot, flag):
     	'''Go get the flag without running into anything'''
@@ -241,6 +243,36 @@ class Agent(object):
             angle -= 2 * math.pi
         return angle
 
+    def visualization(self):
+        '''pick every tenth point to build a potential field'''
+        
+        MatrixX = [[0 for x in range(50)] for x in range(50)] 
+        MatrixY = [[0 for x in range(50)] for x in range(50)]
+
+        for x in xrange(0, 400):
+            for y in xrange(0, 400):
+                self.attractiveField(x, y)
+                MatrixX[x][y] = self.dx
+                MatrixY[x][y] = self.dy
+                x = x + 8;
+                y = y + 8; 
+
+        fig = plt.figure()
+        ax = fig.add_subplot(111)
+ 
+        # generate grid
+        x=np.linspace(0, 400, 50)
+        y=np.linspace(0, 400, 50)
+        x, y=np.meshgrid(x, y)
+        # calculate vector field
+
+        # plot vecor field
+        ax.quiver(x, y, MatrixX, MatrixY, pivot='middle', color='r', headwidth=4, headlength=6)
+        ax.set_xlabel('x')
+        ax.set_ylabel('y')
+        plt.show()
+        plt.savefig('visualization_quiver_demo.png')
+
 
 def main():
     # Process CLI arguments.
@@ -263,8 +295,9 @@ def main():
     # Run the agent
     try:
         while True:
-            time_diff = time.time() - prev_time
-            agent.tick(time_diff)
+             time_diff = time.time() - prev_time
+             agent.tick(time_diff)
+            
     except KeyboardInterrupt:
         print "Exiting due to keyboard interrupt."
         bzrc.close()
