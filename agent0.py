@@ -43,6 +43,7 @@ class Agent(object):
         self.curSpeed = 0
         self.curAngVel = 0
         self.curAngle = 0
+        self.visualizationRun = True
         for base in bases:
         	if base.color == self.constants['team']:
         		self.mybase = base
@@ -67,24 +68,26 @@ class Agent(object):
         self.currentTank = mytanks[0]
         self.flag = flags[0]
         
-        self.attractiveField()
-        print "we ran attractiveField"
-        # self.repulsiveFields()
-        # print "we ran repulsiveFields"
-        # self.tangentialFields()
-        # print "we ran tangentialFields"
-        self.applyDelta()
-        print "we ran applyDelta"
-        command = Command(0, self.curSpeed, self.curAngVel, False)
-        self.commands.append(command)
+        # self.attractiveField()
+        # print "we ran attractiveField"
+        # # self.repulsiveFields()
+        # # print "we ran repulsiveFields"
+        # # self.tangentialFields()
+        # # print "we ran tangentialFields"
+        # self.applyDelta()
+        # print "we ran applyDelta"
+        # command = Command(0, self.curSpeed, self.curAngVel, False)
+        # self.commands.append(command)
         # Decide what to do with each of my tanks
         # for bot in mytanks:
             # self.attack_enemies(bot)
 
         # Send the commands to the server
 
-        results = self.bzrc.do_commands(self.commands)
-        self.visualization()
+        # results = self.bzrc.do_commands(self.commands)
+        if self.visualizationRun:
+            self.visualization()
+            self.visualizationRun = False    
 
     def get_flag(self, bot, flag):
     	'''Go get the flag without running into anything'''
@@ -281,9 +284,9 @@ class Agent(object):
         MatrixY = [[0 for x in range(20)] for x in range(20)]
 
         i = 0;
-        for x in xrange(0, 399,20):
+        for x in xrange(0, 799,40):
             j = 0;
-            for y in xrange(0, 399,20):
+            for y in xrange(0, 799,40):
                 self.attractiveVisualizationField(x, y)
                 MatrixX[i][j] = self.dx
                 MatrixY[i][j] = self.dy
@@ -294,8 +297,8 @@ class Agent(object):
         ax = fig.add_subplot(111)
  
         # generate grid
-        x=np.linspace(0, 400, 30)
-        y=np.linspace(0, 400, 30)
+        x=np.linspace(-400, 400, 30)
+        y=np.linspace(-400, 400, 30)
         x, y=np.meshgrid(x, y)
         # calculate vector field
 
