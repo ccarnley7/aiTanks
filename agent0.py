@@ -148,6 +148,72 @@ class Agent(object):
         else:  # distance > spread+radius
             self.dx = alpha * spread * math.cos(self.angle)
             self.dy = alpha * spread * math.sin(self.angle)
+
+    def repulsiveVisual(self, x, y):
+
+        if x != -1 and y != -1:
+            self.currentTank.x = x
+            self.currentTank.y = y
+        radius = 3;
+        spread = 10;
+        beta = 10;
+        
+        if self.currentTank.flag != '-': 
+            return
+        
+        for tank in self.mytanks:
+            if tank is self.currentTank:
+                continue
+            
+            distance = math.sqrt(math.pow(tank.x - x, 2) + math.pow(y - tank.y, 2))
+            angle = self.normalize_angle(math.atan2(tank.y - y, tank.x - x))
+            
+            if distance < radius:
+                doX = math.copysign(1, math.cos(angle)) * -9001
+                doY = math.copysign(1, math.sin(angle)) * -9001
+            elif radius <= distance and distance <= (spread + radius):
+                doX = -beta * (spread + radius - distance) * math.cos(angle)
+                doY = -beta * (spread + radius - distance) * math.sin(angle)    
+            else: 
+                doX = 0;
+                doY = 0;
+                
+            self.dx = self.dx + doX
+            self.dy = self.dy + doY
+
+    def tangentialVisual(self, x, y):
+
+        if x != -1 and y != -1:
+            self.currentTank.x = x
+            self.currentTank.y = y
+        radius = 1;
+        spread = 10;
+        beta2 = 100;
+        for obstacle in self.obstacles:
+            for i in range(0, 4):
+                start = obstacle[i]
+                if i == 3: end = obstacle[0]
+                else: end = obstacle[i + 1]
+                
+                point = [x, y]
+            
+                distance = self.distanceToLine(start, end, point)
+                angle = (math.atan2(end[0] - start[0], -(end[1] - start[1])) ) - math.pi / 2
+            
+                if distance < radius:
+                    
+                    doX = math.cos(angle) * 9001
+                    doY = math.sin(angle) * 9001
+                
+                elif radius <= distance and distance <= (spread + radius):
+                    doX = beta2 * (spread + radius - distance) * math.cos(angle)
+                    doY = beta2 * (spread + radius - distance) * math.sin(angle)    
+                else:  
+                    doX = 0;
+                    doY = 0;
+                
+                self.dx = self.dx + doX
+                self.dy = self.dy + doY              
         
     def repulsiveFields(self, x=-1, y=-1):
         if x != -1 and y != -1:
@@ -247,7 +313,7 @@ class Agent(object):
         return angle
 
     def visualization(self):
-        '''pick every tenth point to build a potential field'''
+        '''pick every point to build a potential field'''
         
         # generate grid
         x=np.linspace(-400, 400, 40)
@@ -263,7 +329,7 @@ class Agent(object):
         for a in xrange(-400, 400,20):
             j = 0;
             for b in xrange(-400, 400,20):
-                self.attractiveVisualizationField(a, b)
+                self.tangentialVisual(a, b)
                 MatrixX[i][j] = self.dx
                 MatrixY[i][j] = self.dy
                 j = j+1
@@ -273,7 +339,7 @@ class Agent(object):
         ax = fig.add_subplot(111)
 
         # plot vecor field
-        ax.quiver(x, y, MatrixX, MatrixY, pivot='middle', color='r', headwidth=4, headlength=6)
+        ax.quiver(x, y, MatrixX, MatrixY, pivot='middle', color='r')
         ax.set_xlabel('x')
         ax.set_ylabel('y')
         plt.savefig('visualization_quiver_demo.png')
