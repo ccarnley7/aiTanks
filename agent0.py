@@ -83,12 +83,11 @@ class Agent(object):
 
         # Reset my set of commands (we don't want to run old commands)
         self.commands = []
-        print self.obstacles
         self.currentTank = mytanks[0]
-        self.flag = flags[2]
-        self.attractiveField(self.flag.x,self.flag.y)
+        self.flag = flags[1]
+        self.attractiveField()
         self.repulsiveFields()
-        self.tangentialFields()
+        # self.tangentialFields()
         self.controller()
 
         position, occGrid = self.bzrc.get_occgrid(0)
@@ -96,9 +95,6 @@ class Agent(object):
         
         # self.goalPos = self.chooseTarget()
         
-        command = Command(0, self.curSpeed, self.curAngVel, False)
-        self.commands.append(command)
-
         gf.update_grid(self.grid)
         gf.draw_grid()    
 
@@ -122,10 +118,8 @@ class Agent(object):
                     numerator = self.OBS_GIVEN_OCC * self.grid[startY + j][startX + i]
                     denominator = self.OBS_GIVEN_OCC * self.grid[startY + j][startX + i] + self.OBS_GIVEN_NOTOCC * (1 - self.grid[startY + j][startX + i])
                     newP = numerator / denominator
-                    print 'newP:', newP
                     if newP > 0.7:
                         self.obstacles.append((float(startX), float(startY)))
-                        print "here"
                     self.grid[startY + j][startX + i] = newP
 
                 else:
@@ -170,7 +164,17 @@ class Agent(object):
             self.currentTank.y = y
         goalx = self.flag.x
         goaly = self.flag.y
-        if self.currentTank.flag != "-":
+        print self.currentTank.flag
+        if self.currentTank.flag == "-":
+            goalx = self.flags[1].x
+            goaly = self.flags[1].y
+        elif self.currentTank.flag == "purple":
+            goalx = self.flags[0].x
+            goaly = self.flags[0].y
+        elif self.currentTank.flag == "blue":
+            goalx = self.flags[2].x
+            goaly = self.flags[2].y
+        elif self.currentTank.flag == "green":
             goalx = self.mybase.corner1_x
             goaly = self.mybase.corner1_y
         self.distance = math.sqrt((goalx - self.currentTank.x) ** 2 + (self.currentTank.y - goaly) ** 2)
