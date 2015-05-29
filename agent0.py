@@ -4,7 +4,7 @@ from bzrc import BZRC, Command
 import sys, math, time
 import matplotlib.pyplot as plt
 import numpy as np
-import Lab2Visualization.py 
+import grid_filter as gf
 
 # An incredibly simple agent.  All we do is find the closest enemy tank, drive
 # towards it, and shoot.  Note that if friendly fire is allowed, you will very
@@ -36,6 +36,8 @@ class Agent(object):
         self.bases = bases
         self.homeBase = [0, 0]
         self.goalPos = [0, 0] 
+        self.goal = [-375, 375]
+        self.cleaningUp = False
         self.goalRadius = 5
         self.distance = 0  # dist between goal and agent
         self.angle = 0  # angle between goal and agent
@@ -46,6 +48,10 @@ class Agent(object):
         self.prevAngVel = 0
         self.deltaT = 1000
         self.curAngle = 0
+        gf.init_window(800, 800)
+        self.prevTime = 0.0
+        self.timer = 5.0
+
 
 #       
 
@@ -53,6 +59,12 @@ class Agent(object):
         self.NOTOBS_GIVEN_NOTOCC = 0.90
         self.NOTOBS_GIVEN_OCC = 0.03
         self.OBS_GIVEN_NOTOCC = 0.10
+
+        self.grid = np.zeros((800, 800))
+        
+        for y in range(800): # initialize
+            for x in range(800):
+                self.grid[y, x] = .5
 
         self.visualizationRun = True
         for base in bases:
@@ -67,7 +79,7 @@ class Agent(object):
         self.othertanks = othertanks
         self.flags = flags
         self.shots = shots
-        self.obstacles = self.bzrc.get_obstacles()
+        # self.obstacles = self.bzrc.get_obstacles()
         self.enemies = [tank for tank in othertanks if tank.color !=
                 self.constants['team']]
 
@@ -76,20 +88,25 @@ class Agent(object):
 
         self.currentTank = mytanks[0]
         self.flag = flags[2]
-        
-        self.attractiveField()
+        self.attractiveField(self.flag.x,self.flag.y)
         self.repulsiveFields()
-        self.tangentialFields()
-        self.controller()
+        position, occGrid = self.bzrc.get_occgrid(0)
+        self.update(position, occGrid)
+        
+        # self.goalPos = self.chooseTarget()
+        
+        command = Command(0, self.curSpeed, self.curAngVel, False)
+        self.commands.append(command)
+
+        gf.update_grid(self.grid)
+        gf.draw_grid()    
+
         command = Command(0, 1, self.curAngVel, True)
         self.commands.append(command)
 
         results = self.bzrc.do_commands(self.commands)
-        if self.visualizationRun:
-            self.visualization()
-            self.visualizationRun = False  
-
-    def update(self, position, occgrid)
+           
+    def update(self, position, occgrid):
         startX = position[0] + 400
         startY = position[1] + 400
 
@@ -100,11 +117,11 @@ class Agent(object):
                 if self.grid[startY + j][startX + i] == 1 or self.grid[startY + j][startX + i] == 0:
                     j += 1
                     continue
-                if col = 1:
+                if col == 1:
                     numerator = self.OBS_GIVEN_OCC * self.grid[startY + j][startX + i]
                     denominator = self.OBS_GIVEN_OCC * self.grid[startY + j][startX + i] + self.OBS_GIVEN_NOTOCC * (1 - self.grid[startY + j][startX + i])
                     newP = numerator / denominator
-                    print 'newP:', newP
+                    # print 'newP:', newP
                     self.grid[startY + j][startX + i] = newP
                     self.grid[startY + j][startX + i] = newP
 
@@ -398,6 +415,60 @@ class Agent(object):
         dController = (Kd * (angleDif - self.prevAngVel)/self.deltaT)
         self.curAngVel =  pController+dController
         self.prevAngVel = angleDif
+    def chooseTarget(self):
+            curTank = self.currentTank
+            target = None
+            changeGoal= False
+            
+            print self.goal
+            print "currTank", curTank.x, ",", curTank.y
+            distance= self.getDistance([curTank.x,curTank.y], [self.goal[0], -self.goal[1]])
+            print distance
+            if distance < 30 or (self.cleaningUp and distance < 49):
+                print "changeGoal"
+                changeGoal = True
+                
+            if self.goal[0] == 0 or self.goal[1] == 5 and not self.cleaningUp:
+                self.goal = [0, 0]
+                # changeGoal = False
+                self.cleaningUp = True    
+
+            if not self.cleaningUp and changeGoal:
+                x= self.goal[0]
+                y= self.goal[1]
+                
+                if self.goal[0] < 0:
+                    y= -self.goal[1]
+                    if self.goal[1] < 0:
+                            self.goal= [-x, -y] 
+                    else: 
+                        y= y + 90
+                        self.goal= [x, y]
+                else:
+                    if self.goal[1] < 0:
+                        self.goal[1]= -y - 90
+                    else: self.goal[0]= -x + 90           
+                
+               
+            ''' If sweep is complete, find nearest unexplored '''
+            if self.cleaningUp and changeGoal:
+                print 'Looking for leftovers'
+                bestDist = 9001
+            
+                for y in range(800):
+                    for x in range(800):
+                        distance = self.getDistance([curTank.x, curTank.y], [x - 400, y - 400])
+                        if self.grid[y][x] == .5 and distance < bestDist:
+                            bestDist = distance
+                            self.goal = [x - 400, y - 400]
+                     
+            if changeGoal:    
+                print 'goal ', self.goal[0], self.goal[1]
+            if curTank.index != 0 and not self.cleaningUp:
+                target = [-self.goal[0], -self.goal[1]]
+            else: target = [self.goal[0], self.goal[1]]
+             
+            return target
 
 def main():
     # Process CLI arguments.
