@@ -50,7 +50,7 @@ class Agent(object):
         gf.init_window(800, 800)
         self.prevTime = 0.0
         self.timer = 5.0
-
+        self.obstacles = []
 
 #       
 
@@ -78,7 +78,6 @@ class Agent(object):
         self.othertanks = othertanks
         self.flags = flags
         self.shots = shots
-        self.obstacles = []
         self.enemies = [tank for tank in othertanks if tank.color !=
                 self.constants['team']]
 
@@ -123,9 +122,10 @@ class Agent(object):
                     numerator = self.OBS_GIVEN_OCC * self.grid[startY + j][startX + i]
                     denominator = self.OBS_GIVEN_OCC * self.grid[startY + j][startX + i] + self.OBS_GIVEN_NOTOCC * (1 - self.grid[startY + j][startX + i])
                     newP = numerator / denominator
-                    # print 'newP:', newP
+                    print 'newP:', newP
                     if newP > 0.7:
                         self.obstacles.append((float(startX), float(startY)))
+                        print "here"
                     self.grid[startY + j][startX + i] = newP
 
                 else:
@@ -156,6 +156,7 @@ class Agent(object):
         return math.sqrt(math.pow(point2[0] - point1[0], 2) + math.pow(point1[1] - point2[1], 2))   
 
     def distanceToLine(self, start, end, point):
+        print point[0]
         length_sqd = (math.pow(end[0] - start[0], 2) + math.pow(start[1] - end[1], 2))
         
         t = ((point[0] - start[0]) * (end[0] - start[0]) + (point[1] - start[1]) * (end[1] - start[1])) / length_sqd
@@ -317,8 +318,8 @@ class Agent(object):
             print obstacle
             for i in range(0, 4):
                 start = obstacle[i]
-                if i == 3: end = obstacle[0]
-                else: end = obstacle[i + 1]
+                if i == 3: end = obstacle[i]
+                else: end = obstacle[i]
                 
                 point = [self.currentTank.x, self.currentTank.y]
             
