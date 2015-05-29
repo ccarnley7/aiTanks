@@ -51,6 +51,8 @@ class Agent(object):
         self.prevTime = 0.0
         self.timer = 5.0
         self.obstacles = []
+        self.firstRound = True
+        self.secondRound = False
 
 #       
 
@@ -168,21 +170,34 @@ class Agent(object):
         if x != -1 and y != -1:
             self.currentTank.x = x
             self.currentTank.y = y
+        if self.currentTank.x == self.mybase.corner1_x && self.currentTank.y == self.mybase.corner1_y:
+                self.firstRound = False
+                self.secondRound = True
         goalx = self.flag.x
         goaly = self.flag.y
-        print self.currentTank.flag
-        if self.currentTank.flag == "-":
-            goalx = self.flags[1].x
-            goaly = self.flags[1].y
-        elif self.currentTank.flag == "purple":
-            goalx = self.flags[0].x
-            goaly = self.flags[0].y
-        elif self.currentTank.flag == "blue":
-            goalx = self.flags[2].x
-            goaly = self.flags[2].y
-        elif self.currentTank.flag == "green":
-            goalx = self.purplebase.corner1_x
-            goaly = self.purplebase.corner1_y
+        if self.firstRound:
+            if self.currentTank.flag == "-":
+                goalx = self.flags[1].x
+                goaly = self.flags[1].y
+            elif self.currentTank.flag == "purple":
+                goalx = self.flags[0].x
+                goaly = self.flags[0].y
+            elif self.currentTank.flag == "blue":
+                goalx = self.mybase.corner1_x
+                goaly = self.mybase.corner1_y
+        elif self.secondRound:
+            if self.currentTank.flag == "-":
+                goalx = self.flags[1].x
+                goaly = self.flags[1].y
+            elif self.currentTank.flag == "purple":
+                goalx = self.flags[2].x
+                goaly = self.flags[2].y
+            elif self.currentTank.flag == "green":
+                goalx = self.flags[0].x
+                goaly = self.flags[0].y
+            elif self.currentTank.flag == "blue":
+                goalx = self.mybase.corner1_x
+                goaly = self.mybase.corner1_y
         self.distance = math.sqrt((goalx - self.currentTank.x) ** 2 + (self.currentTank.y - goaly) ** 2)
         self.angle = math.atan2(goaly - self.currentTank.y, goalx - self.currentTank.x)
         spread = 10  # not sure what this should be
