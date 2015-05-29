@@ -68,13 +68,13 @@ class Agent(object):
         self.visualizationRun = True
         for base in bases:
         	if base.color == self.constants['team']:
-        		self.mybase = base:
-            if base.color == "purple"
-                self.purplebase = base
-            if base.color == "blue":
-                self.bluebase
-            if base.color == "green":
-                self.greenbase
+                    self.mybase = base
+                if base.color == "purple":
+                    self.purplebase = base
+                if base.color == "blue":
+                    self.bluebase = base
+                if base.color == "green":
+                    self.greenbase = base
 
     def tick(self, time_diff):
         '''Some time has passed; decide what to do next'''
