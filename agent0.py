@@ -119,6 +119,7 @@ class Agent(object):
         for row in occgrid:
             j = 0
             for col in row:
+                
                 if self.grid[startY + j][startX + i] == 1 or self.grid[startY + j][startX + i] == 0:
                     j += 1
                     continue
@@ -126,6 +127,8 @@ class Agent(object):
                     numerator = self.OBS_GIVEN_OCC * self.grid[startY + j][startX + i]
                     denominator = self.OBS_GIVEN_OCC * self.grid[startY + j][startX + i] + self.OBS_GIVEN_NOTOCC * (1 - self.grid[startY + j][startX + i])
                     newP = numerator / denominator
+                    if startY == 0 and startX == 0:
+                        print newP
                     if newP > 0.7:
                         self.obstacles.append((float(startX), float(startY)))
                     self.grid[startY + j][startX + i] = newP
@@ -138,6 +141,7 @@ class Agent(object):
                     newP = numerator / denominator
 
                     self.grid[startY + j][startX + i] = newP
+                                    
                 j += 1
             i += 1    
 
@@ -170,7 +174,7 @@ class Agent(object):
         if x != -1 and y != -1:
             self.currentTank.x = x
             self.currentTank.y = y
-        if self.currentTank.x == self.mybase.corner1_x && self.currentTank.y == self.mybase.corner1_y:
+        if self.currentTank.x == self.mybase.corner1_x and self.currentTank.y == self.mybase.corner1_y:
                 self.firstRound = False
                 self.secondRound = True
         goalx = self.flag.x
