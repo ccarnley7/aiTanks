@@ -36,7 +36,6 @@ class Agent(object):
         self.bases = bases
         self.homeBase = [0, 0]
         self.goalPos = [0, 0] 
-        self.goal = [-375, 375]
         self.cleaningUp = False
         self.goalRadius = 5
         self.distance = 0  # dist between goal and agent
@@ -79,17 +78,20 @@ class Agent(object):
         self.othertanks = othertanks
         self.flags = flags
         self.shots = shots
-        # self.obstacles = self.bzrc.get_obstacles()
+        self.obstacles = []
         self.enemies = [tank for tank in othertanks if tank.color !=
                 self.constants['team']]
 
         # Reset my set of commands (we don't want to run old commands)
         self.commands = []
-
+        print self.obstacles
         self.currentTank = mytanks[0]
         self.flag = flags[2]
         self.attractiveField(self.flag.x,self.flag.y)
         self.repulsiveFields()
+        self.tangentialFields()
+        self.controller()
+
         position, occGrid = self.bzrc.get_occgrid(0)
         self.update(position, occGrid)
         
@@ -122,7 +124,8 @@ class Agent(object):
                     denominator = self.OBS_GIVEN_OCC * self.grid[startY + j][startX + i] + self.OBS_GIVEN_NOTOCC * (1 - self.grid[startY + j][startX + i])
                     newP = numerator / denominator
                     # print 'newP:', newP
-                    self.grid[startY + j][startX + i] = newP
+                    if newP > 0.7:
+                        self.obstacles.append((float(startX), float(startY)))
                     self.grid[startY + j][startX + i] = newP
 
                 else:
@@ -311,6 +314,7 @@ class Agent(object):
         spread = 100;
         beta2 = 100;
         for obstacle in self.obstacles:
+            print obstacle
             for i in range(0, 4):
                 start = obstacle[i]
                 if i == 3: end = obstacle[0]
@@ -415,60 +419,60 @@ class Agent(object):
         dController = (Kd * (angleDif - self.prevAngVel)/self.deltaT)
         self.curAngVel =  pController+dController
         self.prevAngVel = angleDif
-    def chooseTarget(self):
-            curTank = self.currentTank
-            target = None
-            changeGoal= False
+    # def chooseTarget(self):
+    #         curTank = self.currentTank
+    #         target = None
+    #         changeGoal= False
             
-            print self.goal
-            print "currTank", curTank.x, ",", curTank.y
-            distance= self.getDistance([curTank.x,curTank.y], [self.goal[0], -self.goal[1]])
-            print distance
-            if distance < 30 or (self.cleaningUp and distance < 49):
-                print "changeGoal"
-                changeGoal = True
+    #         print self.goal
+    #         print "currTank", curTank.x, ",", curTank.y
+    #         distance= self.getDistance([curTank.x,curTank.y], [self.goal[0], -self.goal[1]])
+    #         print distance
+    #         if distance < 30 or (self.cleaningUp and distance < 49):
+    #             print "changeGoal"
+    #             changeGoal = True
                 
-            if self.goal[0] == 0 or self.goal[1] == 5 and not self.cleaningUp:
-                self.goal = [0, 0]
-                # changeGoal = False
-                self.cleaningUp = True    
+    #         if self.goal[0] == 0 or self.goal[1] == 5 and not self.cleaningUp:
+    #             self.goal = [0, 0]
+    #             # changeGoal = False
+    #             self.cleaningUp = True    
 
-            if not self.cleaningUp and changeGoal:
-                x= self.goal[0]
-                y= self.goal[1]
+    #         if not self.cleaningUp and changeGoal:
+    #             x= self.goal[0]
+    #             y= self.goal[1]
                 
-                if self.goal[0] < 0:
-                    y= -self.goal[1]
-                    if self.goal[1] < 0:
-                            self.goal= [-x, -y] 
-                    else: 
-                        y= y + 90
-                        self.goal= [x, y]
-                else:
-                    if self.goal[1] < 0:
-                        self.goal[1]= -y - 90
-                    else: self.goal[0]= -x + 90           
+    #             if self.goal[0] < 0:
+    #                 y= -self.goal[1]
+    #                 if self.goal[1] < 0:
+    #                         self.goal= [-x, -y] 
+    #                 else: 
+    #                     y= y + 90
+    #                     self.goal= [x, y]
+    #             else:
+    #                 if self.goal[1] < 0:
+    #                     self.goal[1]= -y - 90
+    #                 else: self.goal[0]= -x + 90           
                 
                
-            ''' If sweep is complete, find nearest unexplored '''
-            if self.cleaningUp and changeGoal:
-                print 'Looking for leftovers'
-                bestDist = 9001
+    #         ''' If sweep is complete, find nearest unexplored '''
+    #         if self.cleaningUp and changeGoal:
+    #             print 'Looking for leftovers'
+    #             bestDist = 9001
             
-                for y in range(800):
-                    for x in range(800):
-                        distance = self.getDistance([curTank.x, curTank.y], [x - 400, y - 400])
-                        if self.grid[y][x] == .5 and distance < bestDist:
-                            bestDist = distance
-                            self.goal = [x - 400, y - 400]
+    #             for y in range(800):
+    #                 for x in range(800):
+    #                     distance = self.getDistance([curTank.x, curTank.y], [x - 400, y - 400])
+    #                     if self.grid[y][x] == .5 and distance < bestDist:
+    #                         bestDist = distance
+    #                         self.goal = [x - 400, y - 400]
                      
-            if changeGoal:    
-                print 'goal ', self.goal[0], self.goal[1]
-            if curTank.index != 0 and not self.cleaningUp:
-                target = [-self.goal[0], -self.goal[1]]
-            else: target = [self.goal[0], self.goal[1]]
+    #         if changeGoal:    
+    #             print 'goal ', self.goal[0], self.goal[1]
+    #         if curTank.index != 0 and not self.cleaningUp:
+    #             target = [-self.goal[0], -self.goal[1]]
+    #         else: target = [self.goal[0], self.goal[1]]
              
-            return target
+    #         return target
 
 def main():
     # Process CLI arguments.
