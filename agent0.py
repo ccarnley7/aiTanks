@@ -130,8 +130,9 @@ class Agent(object):
                     if startY == 0 and startX == 0:
                         print newP
                     if newP > 0.7:
-                        self.obstacles.append((float(startX), float(startY)))
+                        print newP
                     self.grid[startY + j][startX + i] = newP
+                   # print newP
 
                 else:
                     
@@ -181,18 +182,21 @@ class Agent(object):
         goaly = self.flag.y
         if self.firstRound:
             if self.currentTank.flag == "-":
-                goalx = self.flags[1].x
-                goaly = self.flags[1].y
-            elif self.currentTank.flag == "purple":
                 goalx = self.flags[0].x
                 goaly = self.flags[0].y
+            elif self.currentTank.flag == "purple":
+                goalx = self.flags[1].x
+                goaly = self.flags[1].y
             elif self.currentTank.flag == "blue":
+                goalx = self.flags[2].x
+                goaly = self.flags[2].y
+            elif self.currentTank.flag == "green":
                 goalx = self.mybase.corner1_x
                 goaly = self.mybase.corner1_y
         elif self.secondRound:
             if self.currentTank.flag == "-":
-                goalx = self.flags[1].x
-                goaly = self.flags[1].y
+                goalx = self.flags[0].x
+                goaly = self.flags[0].y
             elif self.currentTank.flag == "purple":
                 goalx = self.flags[2].x
                 goaly = self.flags[2].y
