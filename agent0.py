@@ -4,6 +4,7 @@ from bzrc import BZRC, Command
 import sys, math, time
 import matplotlib.pyplot as plt
 import numpy as np
+import Lab2Visualization.py 
 
 # An incredibly simple agent.  All we do is find the closest enemy tank, drive
 # towards it, and shoot.  Note that if friendly fire is allowed, you will very
@@ -45,6 +46,14 @@ class Agent(object):
         self.prevAngVel = 0
         self.deltaT = 1000
         self.curAngle = 0
+
+#       
+
+        self.OBS_GIVEN_OCC = 0.97
+        self.NOTOBS_GIVEN_NOTOCC = 0.90
+        self.NOTOBS_GIVEN_OCC = 0.03
+        self.OBS_GIVEN_NOTOCC = 0.10
+
         self.visualizationRun = True
         for base in bases:
         	if base.color == self.constants['team']:
@@ -78,7 +87,38 @@ class Agent(object):
         results = self.bzrc.do_commands(self.commands)
         if self.visualizationRun:
             self.visualization()
-            self.visualizationRun = False   
+            self.visualizationRun = False  
+
+    def update(self, position, occgrid)
+        startX = position[0] + 400
+        startY = position[1] + 400
+
+        i = 0
+        for row in occgrid:
+            j = 0
+            for col in row:
+                if self.grid[startY + j][startX + i] == 1 or self.grid[startY + j][startX + i] == 0:
+                    j += 1
+                    continue
+                if col = 1:
+                    numerator = self.OBS_GIVEN_OCC * self.grid[startY + j][startX + i]
+                    denominator = self.OBS_GIVEN_OCC * self.grid[startY + j][startX + i] + self.OBS_GIVEN_NOTOCC * (1 - self.grid[startY + j][startX + i])
+                    newP = numerator / denominator
+                    print 'newP:', newP
+                    self.grid[startY + j][startX + i] = newP
+                    self.grid[startY + j][startX + i] = newP
+
+                else:
+                    
+                    assert col == 0
+                    numerator = self.NOTOBS_GIVEN_OCC * self.grid[startY + j][startX + i]
+                    denominator = self.NOTOBS_GIVEN_OCC * self.grid[startY + j][startX + i] + self.NOTOBS_GIVEN_NOTOCC * (1 - self.grid[startY + j][startX + i])
+                    newP = numerator / denominator
+
+                    self.grid[startY + j][startX + i] = newP
+                j += 1
+            i += 1    
+
 
     def get_flag(self, bot, flag):
     	'''Go get the flag without running into anything'''
@@ -251,7 +291,7 @@ class Agent(object):
             self.currentTank.x = x
             self.currentTank.y = y
         radius = 1;
-        spread = 10;
+        spread = 100;
         beta2 = 100;
         for obstacle in self.obstacles:
             for i in range(0, 4):
@@ -329,6 +369,8 @@ class Agent(object):
         for a in xrange(-400, 400,20):
             j = 0;
             for b in xrange(-400, 400,20):
+                self.attractiveVisualizationField(a, b)
+                self.repulsiveVisual(a, b)
                 self.tangentialVisual(a, b)
                 MatrixX[i][j] = self.dx
                 MatrixY[i][j] = self.dy
