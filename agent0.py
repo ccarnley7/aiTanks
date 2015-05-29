@@ -68,7 +68,13 @@ class Agent(object):
         self.visualizationRun = True
         for base in bases:
         	if base.color == self.constants['team']:
-        		self.mybase = base
+        		self.mybase = base:
+            if base.color == "purple"
+                self.purplebase = base
+            if base.color == "blue":
+                self.bluebase
+            if base.color == "green":
+                self.greenbase
 
     def tick(self, time_diff):
         '''Some time has passed; decide what to do next'''
@@ -175,8 +181,8 @@ class Agent(object):
             goalx = self.flags[2].x
             goaly = self.flags[2].y
         elif self.currentTank.flag == "green":
-            goalx = self.mybase.corner1_x
-            goaly = self.mybase.corner1_y
+            goalx = self.purplebase.corner1_x
+            goaly = self.purplebase.corner1_y
         self.distance = math.sqrt((goalx - self.currentTank.x) ** 2 + (self.currentTank.y - goaly) ** 2)
         self.angle = math.atan2(goaly - self.currentTank.y, goalx - self.currentTank.x)
         spread = 10  # not sure what this should be
