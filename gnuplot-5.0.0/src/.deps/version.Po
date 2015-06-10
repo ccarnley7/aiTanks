@@ -1,0 +1,10 @@
+version.o: version.c version.h syscfg.h ../config.h \
+  /Applications/Xcode.app/Contents/Developer/Toolchains/XcodeDefault.xctoolchain/usr/bin/../lib/clang/6.1.0/include/stdbool.h
+
+version.h:
+
+syscfg.h:
+
+../config.h:
+
+/Applications/Xcode.app/Contents/Developer/Toolchains/XcodeDefault.xctoolchain/usr/bin/../lib/clang/6.1.0/include/stdbool.h:

@@ -66,7 +66,6 @@ class KalmanPlotting(object):
         print >> outfile, self.gnuplot_isosamples(100)
         print >> outfile, self.gnuplot_setXYRho(self.sig_x, self.sig_y, self.rho)
         print >> outfile, self.gnuplot_splot()
+        #gnuplot self.FILENAME
 
 
-
-        
