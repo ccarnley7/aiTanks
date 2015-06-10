@@ -465,3 +465,5 @@ def main():
 
 if __name__ == '__main__':
     main()
+
+    # ./bin/bzrflag --world=maps/empty_condensed.bzw --red-tanks=1 --purple-tanks=1 --blue-tanks=0 --green-tanks=0 --red-port=33333 --purple-port=22222 --world-size=500 --default-posnoise=5
