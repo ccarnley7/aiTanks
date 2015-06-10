@@ -8,7 +8,9 @@ import matplotlib.pyplot as plt
 
 
 from bzrc import BZRC, Command
-
+plt.axis([-250, 250, -250, 250])
+plt.ion()
+plt.show()
 class KalmanAgent(object):
     
     def __init__(self, bzrc):
@@ -26,7 +28,10 @@ class KalmanAgent(object):
         self.plotTimer = 0.0
         self.plotId = 0
         self.gunTimer = float(random.randrange(15, 26)) / 10
-        
+        self.estimatesX = []
+        self.estimatesY = []
+        self.obsX = []
+        self.obsY = []
         self.flagZone = 150
         self.homeBase = [0, 0]
         self.goalPos = [0, 0] 
@@ -36,7 +41,7 @@ class KalmanAgent(object):
         self.dx = 0
         self.dy = 0
         self.oldDist = 0
-        
+        self.counter = 0
         self.initMatrices()
         
     def dot(self, v1, v2):
@@ -297,9 +302,7 @@ class KalmanAgent(object):
             print sig_y
             print rho
             
-            plt.plot([sig_x], [sig_y], 'ro')
-            plt.axis([-400, 400, -400, 400])
-            plt.show()
+            
             # kalmanPlotting = KalmanPlotting.KalmanPlotting(sig2_x, sig2_y, rho, self.plotId)
             # self.plotId += 1
             # self.plotTimer = random.randrange(1, 6)
@@ -381,7 +384,7 @@ class KalmanAgent(object):
 #                 futurePos = self.predictMu(future)
                 self.goalPos = self.predictMu(future)
 
-               
+                
 #                 dist2 = self.getDistance([self.currentTank.x, self.currentTank.y], futurePos)
 #                 timeDiff = (dist2 - dist) / shotSpeed
 #                 ticksDiff = int(timeDiff / .01)
@@ -396,6 +399,15 @@ class KalmanAgent(object):
                 self.updateK(A)
                 self.updateMu()
                 self.updateSig_t(A)
+                self.estimatesX.append(estimate[0])
+                self.estimatesY.append(estimate[1])
+                self.obsX.append(self.enemies[0].x)
+                self.obsY.append(self.enemies[0].y)
+                plt.plot(estimate[0], estimate[1], 'bo', self.enemies[0].x, self.enemies[0].y, 'ro')
+                plt.draw()
+                #plt.plot([self.enemies[0].x], [self.enemies[0].y], 'ro')
+                
+                
 
 #             print 'goal:', self.goalPos, 'reading:', goalReading    
         
@@ -403,7 +415,8 @@ class KalmanAgent(object):
             self.repulsiveFields()
             self.tangentialFields()
             self.applyDelta()
-            
+            # if self.curSpeed == 0: 
+            # 	plt.show()
             command = Command(self.currentTank.index, self.curSpeed, self.curAngVel, shouldShoot)
             self.commands.append(command)
         
